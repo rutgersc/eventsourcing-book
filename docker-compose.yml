@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      # POSTGRES_USER: your_db_user #
+      POSTGRES_PASSWORD: example
+      # POSTGRES_DB: your_db_name # POSTGRES_USER
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready"]
+    #   interval: 1s
+    #   timeout: 5s
+    #   retries: 10
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  # EventStoreDB service
+  eventstore:
+    image: eventstore/eventstore:lts
+    container_name: esdb-node
+    ports:
+      - "2113:2113"  # HTTP API and Admin UI
+    environment:
+      EVENTSTORE_RUN_PROJECTIONS: All
+      EVENTSTORE_START_STANDARD_PROJECTIONS: true
+      EVENTSTORE_INSECURE: "true"
+      EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: "true"
+    restart: unless-stopped
+
+
+volumes:
+  pgdata:
