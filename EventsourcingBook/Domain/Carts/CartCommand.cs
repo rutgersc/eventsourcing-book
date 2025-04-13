@@ -11,4 +11,8 @@ public abstract record CartCommand
         Guid ItemId,
         Guid ProductId)
         : CartCommand;
+
+    public sealed record RemoveItemCommand(
+        Guid ItemId)
+        : CartCommand;
 }
