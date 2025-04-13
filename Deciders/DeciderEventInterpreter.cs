@@ -8,7 +8,7 @@ public class DeciderEventInterpreter<TId, TCommand, TEvent, TState, TErr>(
 {
     public IDeciderEventPersistence<TId, TEvent> Persistence => persistence;
 
-    public async Task<TStateView?> ReadStateView<TStateView>(TId id, StateView<TEvent, TStateView> stateView)
+    public async Task<TStateView?> ReadStateView<TStateView>(StateView<TEvent, TStateView> stateView, TId id)
     {
         var events = await persistence.LoadEvents(id);
 
