@@ -1,14 +1,19 @@
 using Deciders;
+using EventsourcingBook.;
 using EventsourcingBook.Domain.Carts;
 using EventsourcingBook.Domain.Carts.ReadModels;
+using EventsourcingBook.Domain.Inventories;
+using EventsourcingBook.Domain.Products;
 using EventsourcingBook.Infra;
 using EventsourcingBook.Infra.Carts;
 using EventsourcingBook.Infra.Carts.EventStore;
 using EventStore.Client;
+using EventsourcingBook.Infra.Inventories.EventStore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 using CartDispatch = System.Func<EventsourcingBook.Domain.Carts.CartId, EventsourcingBook.Domain.Carts.CartCommand, System.Threading.Tasks.Task<System.Result<System.Collections.Generic.IReadOnlyCollection<EventsourcingBook.Domain.Carts.CartEvent>, EventsourcingBook.Domain.Carts.CartError>>>;
+using InventoryDispatch = System.Func<EventsourcingBook.Domain.Products.ProductId, EventsourcingBook.Domain.Inventories.InventoryCommand, System.Threading.Tasks.Task<System.Result<System.Collections.Generic.IReadOnlyCollection<EventsourcingBook.Domain.Inventories.InventoryEvent>, EventsourcingBook.Domain.Inventories.InventoryError>>>;
 
 // Setup services
 var builder = WebApplication.CreateBuilder(args);
@@ -26,11 +31,19 @@ var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
 
 // Application
-var runApplicationEventSourced = true;
+var runApplicationEventSourced = false;
 var cartStateStored = CartDecider.Decider.ConfigureState(new CartStateEntityFrameworkRepository(dbContext));
 var cartEventStored = CartDecider.Decider.ConfigureEventPersistence(new CartEventsRepository(eventStoreDbClient));
+var inventoryEventStored = InventoryDecider.Decider.ConfigureEventPersistence(new InventoryEventsRepository(eventStoreDbClient));
+var inventoryStateStored = InventoryDecider.Decider.ConfigureState(new InventoryStateEntityFrameworkRepository(dbContext));
 
-CartDispatch cartDispatch = runApplicationEventSourced ? cartEventStored.ExecuteCommand : cartStateStored.ExecuteCommand;
+CartDispatch cartDispatch = runApplicationEventSourced
+    ? cartEventStored.ExecuteCommand
+    : cartStateStored.ExecuteCommand;
+
+InventoryDispatch inventoryDispatch = runApplicationEventSourced
+    ? inventoryEventStored.ExecuteCommand
+    : inventoryStateStored.ExecuteCommand;
 
 IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollection<TEvent>, TError> result) where TError : notnull
 {
@@ -89,6 +102,15 @@ app.MapPost("clearcart/{cartId}",
         return ResultToHttpResponse(cartId, result);
     });
 
+app.MapPost("simulate-inventory-external-event-translation/",
+    async ([FromBody] ExternalInventoryChangedEvent externalInventoryChangedEvent) =>
+    {
+        // external gets translated to internal a command/event
+        var productId = new ProductId(externalInventoryChangedEvent.ProductId);
+        var result = await inventoryDispatch(productId, externalInventoryChangedEvent.ToCommand());
+        return ResultToHttpResponse(productId, result);
+    });
+
 app.Run();
 
 record AddItemPayload(
@@ -119,4 +141,10 @@ record RemoveItemPayload(
             ItemId: this.itemId);
     }
 }
+
+record ExternalInventoryChangedEvent(Guid ProductId, int Inventory)
+{
+    public InventoryCommand.ChangeInventoryCommand ToCommand() =>
+        new(this.Inventory);
+};
 
