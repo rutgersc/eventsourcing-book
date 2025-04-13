@@ -1,5 +1,6 @@
 using Deciders;
 using EventsourcingBook.Domain.Carts;
+using EventsourcingBook.Domain.Carts.ReadModels;
 using EventsourcingBook.Infra;
 using EventsourcingBook.Infra.Carts;
 using EventsourcingBook.Infra.Carts.EventStore;
@@ -39,6 +40,16 @@ IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollec
 }
 
 app.MapPost(
+        "/additem",
+        async ([FromBody] AddItemPayload item) =>
+        {
+            var id = new CartId(Guid.NewGuid());
+            var result = await cartDispatch(id, item.ToCommand());
+            return ResultToHttpResponse(id, result);
+        })
+    .WithName("AddNewCartItem");
+
+app.MapPost(
     "/additem/{cartId}",
     async (CartId cartId, [FromBody] AddItemPayload item) =>
     {
@@ -46,6 +57,23 @@ app.MapPost(
         return ResultToHttpResponse(cartId, result);;
     })
     .WithName("AddCartItem");
+
+app.MapGet("/{cartId}/cartitems",
+    async (CartId cartId) =>
+    {
+        if (runApplicationEventSourced)
+        {
+            return await cartEventStored.ReadStateView(CartItemsReadModel.StateView, cartId);
+        }
+        else
+        {
+            // State-stored decider does not persist the events, some the alternatives are
+            // 1) In-memory subscribe & persist the ReadModel as the events happen
+            // 2) Create a mapping from (CartState -> CartItemsReadModel) like we do with CRUD
+            // 3) Persist the events/outbox (why not do eventsourcing then)
+            return CartItemsReadModel.StateView.InitialState;
+        }
+    });
 
 app.Run();
 

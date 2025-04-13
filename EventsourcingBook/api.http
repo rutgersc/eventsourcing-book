@@ -15,3 +15,28 @@ Content-Type: application/json; charset=utf-8
   "productId": "2e03274e-486b-4a44-b91b-2fa549c72767"
 }
 
+
+
+###
+POST {{api}}/additem
+Accept: application/json
+Content-Type: application/json; charset=utf-8
+
+{
+  "description": "a",
+  "image": "a",
+  "price": 123,
+  "itemId": "9b1c44e5-5711-450a-8fb9-4fc5360ca1a9",
+  "productId": "2e03274e-486b-4a44-b91b-2fa549c72767"
+}
+
+###
+@cartId = af568328-19cd-4916-9e79-29a67de8a0cc
+
+
+###
+GET {{api}}/af568328-19cd-4916-9e79-29a67de8a0cc/cartitems
+Accept: application/json
+
+###
+Accept: application/json

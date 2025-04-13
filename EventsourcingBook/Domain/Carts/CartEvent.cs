@@ -16,4 +16,8 @@ public abstract record CartEvent
         CartItemId ItemId,
         ProductId ProductId)
         : CartEvent;
+
+    public sealed record ItemRemovedEvent(
+        CartItemId ItemId)
+        : CartEvent;
 }

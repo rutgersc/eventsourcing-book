@@ -23,6 +23,9 @@ public abstract record CartState
             case (Cart cart, ItemAddedEvent addedEvent):
                 return cart with { Items = cart.Items.Add(addedEvent.ItemId) };
 
+            case (Cart cart, ItemRemovedEvent removedEvent):
+                return cart with { Items = cart.Items.Remove(removedEvent.ItemId) };
+
             default:
                 return state;
         }

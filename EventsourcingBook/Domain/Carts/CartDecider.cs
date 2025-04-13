@@ -26,15 +26,20 @@ public static class CartDecider
                     return new CartItemSizeExceeded();
                 }
 
+                var itemAddedEvent = new ItemAddedEvent(
+                    Description: addItemCommand.Description,
+                    Image: addItemCommand.Image,
+                    Price: addItemCommand.Price,
+                    ItemId: new CartItemId(addItemCommand.ItemId),
+                    ProductId: new ProductId(addItemCommand.ProductId));
+
+                return state is CartInitialState
+                    ? new CartEvent[] { new CartCreatedEvent(), itemAddedEvent }
+                    : new CartEvent[] { itemAddedEvent };
+
+            case (RemoveItemCommand removeItemCommand, Cart cart):
                 return new CartEvent[]
                 {
-                    new CartCreatedEvent(),
-                    new ItemAddedEvent(
-                        Description: addItemCommand.Description,
-                        Image: addItemCommand.Image,
-                        Price: addItemCommand.Price,
-                        ItemId: new CartItemId(addItemCommand.ItemId),
-                        ProductId: new ProductId(addItemCommand.ProductId))
                 };
 
             case (_, CartInitialState):
