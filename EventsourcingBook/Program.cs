@@ -75,6 +75,13 @@ app.MapGet("/{cartId}/cartitems",
         }
     });
 
+app.MapPost("removeitem/{cartId}",
+    async (CartId cartId, [FromBody] RemoveItemPayload item) =>
+    {
+        var result = await cartDispatch(cartId, item.ToCommand());
+        return ResultToHttpResponse(cartId, result);
+    });
+
 app.Run();
 
 record AddItemPayload(
@@ -93,6 +100,16 @@ record AddItemPayload(
             Price: item.price,
             ItemId: item.itemId,
             ProductId: item.productId);
+    }
+}
+
+record RemoveItemPayload(
+    Guid itemId)
+{
+    public CartCommand.RemoveItemCommand ToCommand()
+    {
+        return new CartCommand.RemoveItemCommand(
+            ItemId: this.itemId);
     }
 }
 
