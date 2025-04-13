@@ -40,7 +40,7 @@ public static class CartDecider
             case (RemoveItemCommand removeItemCommand, Cart cart):
                 if (!cart.Items.Any(item => item.Value == removeItemCommand.ItemId))
                 {
-                    return new CartError.CartItemIsNotInCart();
+                    return new CartItemIsNotInCart();
                 }
 
                 return new CartEvent[]
@@ -50,6 +50,9 @@ public static class CartDecider
 
             case (_, CartInitialState):
                 return new CartNotFound();
+
+            case (ClearCartCommand, Cart):
+                return new CartEvent[] { new CartCleared() };
 
             default:
                 return new CartEvent[] { };

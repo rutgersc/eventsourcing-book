@@ -36,6 +36,13 @@ public record CartItemsReadModel(
                     TotalPrice = state.TotalPrice - itemToRemove.Price
                 };
 
+            case CartCleared ev:
+                return state with
+                {
+                    CartItems = state.CartItems.Clear(),
+                    TotalPrice = 0
+                };
+
             default:
                 return state;
         }

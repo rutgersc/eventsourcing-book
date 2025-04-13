@@ -82,6 +82,13 @@ app.MapPost("removeitem/{cartId}",
         return ResultToHttpResponse(cartId, result);
     });
 
+app.MapPost("clearcart/{cartId}",
+    async (CartId cartId) =>
+    {
+        var result = await cartDispatch(cartId, new CartCommand.ClearCartCommand());
+        return ResultToHttpResponse(cartId, result);
+    });
+
 app.Run();
 
 record AddItemPayload(
