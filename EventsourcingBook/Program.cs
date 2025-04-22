@@ -1,5 +1,4 @@
 using Deciders;
-using EventsourcingBook.;
 using EventsourcingBook.Domain.Carts;
 using EventsourcingBook.Domain.Carts.ReadModels;
 using EventsourcingBook.Domain.Inventories;
@@ -8,6 +7,7 @@ using EventsourcingBook.Infra;
 using EventsourcingBook.Infra.Carts;
 using EventsourcingBook.Infra.Carts.EventStore;
 using EventStore.Client;
+using EventsourcingBook.Infra.Inventories;
 using EventsourcingBook.Infra.Inventories.EventStore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +44,11 @@ CartDispatch cartDispatch = runApplicationEventSourced
 InventoryDispatch inventoryDispatch = runApplicationEventSourced
     ? inventoryEventStored.ExecuteCommand
     : inventoryStateStored.ExecuteCommand;
+
+await inventoryEventStored.Persistence.Subscribe(async (id, inventoryEvent) =>
+{
+    await InventoriesReadModelProjector.Project(dbContext, id, inventoryEvent);
+});
 
 IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollection<TEvent>, TError> result) where TError : notnull
 {
@@ -109,6 +114,24 @@ app.MapPost("simulate-inventory-external-event-translation/",
         var productId = new ProductId(externalInventoryChangedEvent.ProductId);
         var result = await inventoryDispatch(productId, externalInventoryChangedEvent.ToCommand());
         return ResultToHttpResponse(productId, result);
+    });
+
+app.MapGet("/inventories/{productId:Guid}",
+    async (Guid productId) =>
+    {
+        if (runApplicationEventSourced)
+        {
+            return await dbContext.InventoriesReadModel
+                .FirstOrDefaultAsync(i => i.ProductId == productId);
+        }
+        else
+        {
+            // With state-stored systems, the read-model is usually coupled to the same table as the write side.
+            return await dbContext.Inventories
+                .Where(i => i.ProductId == productId)
+                .Select(i => new InventoriesReadModelEntity { ProductId = i.ProductId, Inventory = i.Inventory })
+                .FirstOrDefaultAsync();
+        }
     });
 
 app.Run();

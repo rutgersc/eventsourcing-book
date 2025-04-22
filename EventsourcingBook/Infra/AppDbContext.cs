@@ -1,10 +1,16 @@
 ﻿using EventsourcingBook.Infra.Carts;
+using EventsourcingBook.Infra.Inventories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventsourcingBook.Infra;
 
 public class AppDbContext : DbContext
 {
+    //
+    // ReadModels
+    //
+    public DbSet<InventoriesReadModelEntity> InventoriesReadModel { get; set; }
+
     //
     // State stored deciders
     //
@@ -29,5 +35,8 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<InventoryEntity>()
             .HasKey(e => e.ProductId);
+
+        modelBuilder.Entity<InventoriesReadModelEntity>()
+            .HasNoKey();
     }
 }
