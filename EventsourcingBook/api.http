@@ -50,12 +50,18 @@ Content-Type: application/json; charset=utf-8
 POST {{api}}/clearcart/{{cartId}}
 Accept: application/json
 
+###
+@productId = 2e03274e-486b-4a44-b91b-2fa549c72767
 
 ###
 POST {{api}}/simulate-inventory-external-event-translation/
 Content-Type: application/json; charset=utf-8
 
 {
-  "productId": "2e03274e-486b-4a44-b91b-2fa549c72767",
+  "productId": "{{productId}}",
   "inventory": 15
 }
+
+###
+GET {{api}}/inventories/{{productId}}
+Accept: application/json
