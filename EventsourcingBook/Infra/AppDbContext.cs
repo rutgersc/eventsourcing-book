@@ -11,6 +11,8 @@ public class AppDbContext : DbContext
     //
     public DbSet<InventoriesReadModelEntity> InventoriesReadModel { get; set; }
 
+    public DbSet<CartsWithProductsReadModelEntity> CartsWithProducts { get; set; }
+
     //
     // State stored deciders
     //
@@ -19,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<InventoryEntity> Inventories { get; set; }
 
     public DbSet<PricingEntity> Pricing { get; set; }
+
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -35,13 +38,23 @@ public class AppDbContext : DbContext
             .WithOne() // assuming CartItem has no navigation property back to Cart
             .HasForeignKey(ci => ci.CartId);
 
+        // CartItem
+        modelBuilder.Entity<CartItem>()
+            .HasKey(ci => ci.CartItemId);
+
         modelBuilder.Entity<InventoryEntity>()
             .HasKey(e => e.ProductId);
 
         modelBuilder.Entity<PricingEntity>()
             .HasKey(e => e.ProductId);
 
+        // Reamodels
         modelBuilder.Entity<InventoriesReadModelEntity>()
             .HasNoKey();
+
+        modelBuilder.Entity<CartsWithProductsReadModelEntity>()
+            .HasKey(
+                nameof(CartsWithProductsReadModelEntity.CartId),
+                nameof(CartsWithProductsReadModelEntity.ProductId));
     }
 }

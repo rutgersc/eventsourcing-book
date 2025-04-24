@@ -9,7 +9,10 @@ public class CartStateEntityFrameworkRepository(AppDbContext dbContext)
 {
     public async Task<CartState> LoadState(CartId id, CartState initialState)
     {
-        var cart = await dbContext.Carts.FirstOrDefaultAsync(cart => cart.CartId == id.Value);
+        var cart = await dbContext.Carts
+            .Include(c => c.CartItems)
+            .FirstOrDefaultAsync(cart => cart.CartId == id.Value);
+
         return cart?.ToDomain() ?? initialState;
     }
 
@@ -19,7 +22,7 @@ public class CartStateEntityFrameworkRepository(AppDbContext dbContext)
 
         if (cart == null)
         {
-            cart = new Cart();
+            cart = new Cart { CartId = id.Value };
             dbContext.Carts.Add(cart);
         }
 

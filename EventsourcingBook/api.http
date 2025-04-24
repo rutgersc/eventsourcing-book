@@ -19,6 +19,9 @@ Content-Type: application/json; charset=utf-8
 @cartId = af568328-19cd-4916-9e79-29a67de8a0cc
 
 ###
+@productId = 2e03274e-486b-4a44-b91b-2fa549c72767
+
+###
 POST {{api}}/additem/{{cartId}}
 Accept: application/json
 Content-Type: application/json; charset=utf-8
@@ -50,8 +53,7 @@ Content-Type: application/json; charset=utf-8
 POST {{api}}/clearcart/{{cartId}}
 Accept: application/json
 
-###
-@productId = 2e03274e-486b-4a44-b91b-2fa549c72767
+
 
 ###
 POST {{api}}/simulate-inventory-external-event-translation/
@@ -74,3 +76,7 @@ Content-Type: application/json; charset=utf-8
   "oldPrice": 100,
   "newPrice": 15
 }
+
+###
+GET {{api}}/cartwithproducts/{{productId}}
+Accept: application/json

@@ -59,6 +59,11 @@ await inventoryEventStored.Persistence.Subscribe(async (id, inventoryEvent) =>
     await InventoriesReadModelProjector.Project(dbContext, id, inventoryEvent);
 });
 
+await cartEventStored.Persistence.Subscribe(async (id, inventoryEvent) =>
+{
+    await CartsWithProductsReadModelProjector.Project(dbContext, id, inventoryEvent);
+});
+
 IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollection<TEvent>, TError> result) where TError : notnull
 {
     return result.Switch(
@@ -160,6 +165,32 @@ app.MapPost("/changeprice/{productId}",
         return ResultToHttpResponse(productId, result);
     });
 
+app.MapGet("/cartwithproducts/{productId:Guid}",
+    async (Guid productId) =>
+    {
+        if (runApplicationEventSourced)
+        {
+            var cartsWithProducts = await dbContext.CartsWithProducts
+                .Where(entity => entity.ProductId == productId)
+                .ToListAsync();
+
+            return new CartsWithProductsReadModel(cartsWithProducts);
+        }
+        else
+        {
+            var cartsWithProducts  = await dbContext.Carts
+                .Where(entity => entity.CartItems.Any(c => c.ProductId == productId))
+                .Select(entity => new CartsWithProductsReadModelEntity
+                {
+                    CartId = entity.CartId,
+                    ProductId = entity.CartItems.Select(c => c.ProductId).First()
+                })
+                .ToListAsync();
+
+            return new CartsWithProductsReadModel(cartsWithProducts);
+        }
+    });
+
 app.Run();
 
 record AddItemPayload(
@@ -187,7 +218,7 @@ record RemoveItemPayload(
     public CartCommand.RemoveItemCommand ToCommand()
     {
         return new CartCommand.RemoveItemCommand(
-            ItemId: this.itemId);
+            ItemId: new CartItemId(this.itemId));
     }
 }
 
@@ -208,3 +239,5 @@ record ChangePricePayload(
 {
     public PricingCommand.ChangePriceCommand ToCommand() => new(this.OldPrice, this.NewPrice);
 }
+
+record CartsWithProductsReadModel(List<CartsWithProductsReadModelEntity> Data);
