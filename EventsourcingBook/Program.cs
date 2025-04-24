@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 
 using CartDispatch = System.Func<EventsourcingBook.Domain.Carts.CartId, EventsourcingBook.Domain.Carts.CartCommand, System.Threading.Tasks.Task<System.Result<System.Collections.Generic.IReadOnlyCollection<EventsourcingBook.Domain.Carts.CartEvent>, EventsourcingBook.Domain.Carts.CartError>>>;
 using InventoryDispatch = System.Func<EventsourcingBook.Domain.Products.ProductId, EventsourcingBook.Domain.Inventories.InventoryCommand, System.Threading.Tasks.Task<System.Result<System.Collections.Generic.IReadOnlyCollection<EventsourcingBook.Domain.Inventories.InventoryEvent>, EventsourcingBook.Domain.Inventories.InventoryError>>>;
+using PricingDispatch = System.Func<EventsourcingBook.Domain.Products.ProductId, EventsourcingBook.Domain.Inventories.PricingCommand, System.Threading.Tasks.Task<System.Result<System.Collections.Generic.IReadOnlyCollection<EventsourcingBook.Domain.Inventories.PricingEvent>, EventsourcingBook.Domain.Inventories.PricingError>>>;
 
 // Setup services
 var builder = WebApplication.CreateBuilder(args);
@@ -34,8 +35,12 @@ var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 var runApplicationEventSourced = false;
 var cartStateStored = CartDecider.Decider.ConfigureState(new CartStateEntityFrameworkRepository(dbContext));
 var cartEventStored = CartDecider.Decider.ConfigureEventPersistence(new CartEventsRepository(eventStoreDbClient));
+
 var inventoryEventStored = InventoryDecider.Decider.ConfigureEventPersistence(new InventoryEventsRepository(eventStoreDbClient));
 var inventoryStateStored = InventoryDecider.Decider.ConfigureState(new InventoryStateEntityFrameworkRepository(dbContext));
+
+var pricingEventStored = PricingDecider.Decider.ConfigureEventPersistence(new PricingEventsRepository(eventStoreDbClient));
+var pricingStateStored = PricingDecider.Decider.ConfigureState(new PricingStateEntityFrameworkRepository(dbContext));
 
 CartDispatch cartDispatch = runApplicationEventSourced
     ? cartEventStored.ExecuteCommand
@@ -44,6 +49,10 @@ CartDispatch cartDispatch = runApplicationEventSourced
 InventoryDispatch inventoryDispatch = runApplicationEventSourced
     ? inventoryEventStored.ExecuteCommand
     : inventoryStateStored.ExecuteCommand;
+
+ PricingDispatch pricingDispatch = runApplicationEventSourced
+    ? pricingEventStored.ExecuteCommand
+    : pricingStateStored.ExecuteCommand;
 
 await inventoryEventStored.Persistence.Subscribe(async (id, inventoryEvent) =>
 {
@@ -107,7 +116,7 @@ app.MapPost("clearcart/{cartId}",
         return ResultToHttpResponse(cartId, result);
     });
 
-app.MapPost("simulate-inventory-external-event-translation/",
+app.MapPost("simulate-inventory-external-event-translation",
     async ([FromBody] ExternalInventoryChangedEvent externalInventoryChangedEvent) =>
     {
         // external gets translated to internal a command/event
@@ -132,6 +141,23 @@ app.MapGet("/inventories/{productId:Guid}",
                 .Select(i => new InventoriesReadModelEntity { ProductId = i.ProductId, Inventory = i.Inventory })
                 .FirstOrDefaultAsync();
         }
+    });
+
+app.MapPost("simulate-external-event-translation-price",
+    async ([FromBody] ExternalInventoryPriceChangedEvent priceChangedEvent) =>
+    {
+        // external gets translated to internal a command/event
+        var productId = new ProductId(priceChangedEvent.ProductId);
+        var result = await pricingEventStored.ExecuteCommand(productId, priceChangedEvent.ToCommand());
+
+        return ResultToHttpResponse(productId, result);
+    });
+
+app.MapPost("/changeprice/{productId}",
+    async (ProductId productId, [FromBody] ChangePricePayload payload) =>
+    {
+        var result = await pricingDispatch(productId, payload.ToCommand());
+        return ResultToHttpResponse(productId, result);
     });
 
 app.Run();
@@ -171,3 +197,14 @@ record ExternalInventoryChangedEvent(Guid ProductId, int Inventory)
         new(this.Inventory);
 };
 
+record ExternalInventoryPriceChangedEvent(Guid ProductId, decimal OldPrice, decimal NewPrice)
+{
+    public PricingCommand.ChangePriceCommand ToCommand() => new (this.OldPrice, this.NewPrice);
+}
+
+record ChangePricePayload(
+    decimal OldPrice,
+    decimal NewPrice)
+{
+    public PricingCommand.ChangePriceCommand ToCommand() => new(this.OldPrice, this.NewPrice);
+}

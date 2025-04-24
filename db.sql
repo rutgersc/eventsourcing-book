@@ -11,6 +11,19 @@ CREATE TABLE "Inventories" (
 );
 
 
+CREATE TABLE "InventoriesReadModel" (
+    "ProductId" uuid NOT NULL,
+    "Inventory" integer NOT NULL
+);
+
+
+CREATE TABLE "Pricing" (
+    "ProductId" uuid NOT NULL,
+    "Price" numeric NOT NULL,
+    CONSTRAINT "PK_Pricing" PRIMARY KEY ("ProductId")
+);
+
+
 CREATE TABLE "CartItem" (
     "CartItemId" uuid NOT NULL,
     "CartId" uuid NOT NULL,

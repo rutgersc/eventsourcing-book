@@ -1,5 +1,4 @@
 ﻿using Deciders;
-using EventsourcingBook.Domain.Carts;
 using EventsourcingBook.Domain.Inventories;
 using EventsourcingBook.Domain.Products;
 using Microsoft.EntityFrameworkCore;
