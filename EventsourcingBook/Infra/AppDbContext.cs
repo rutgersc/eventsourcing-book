@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
 
     public DbSet<InventoryEntity> Inventories { get; set; }
 
+    public DbSet<PricingEntity> Pricing { get; set; }
+
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -34,6 +36,9 @@ public class AppDbContext : DbContext
             .HasForeignKey(ci => ci.CartId);
 
         modelBuilder.Entity<InventoryEntity>()
+            .HasKey(e => e.ProductId);
+
+        modelBuilder.Entity<PricingEntity>()
             .HasKey(e => e.ProductId);
 
         modelBuilder.Entity<InventoriesReadModelEntity>()

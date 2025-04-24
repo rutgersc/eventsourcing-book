@@ -65,3 +65,12 @@ Content-Type: application/json; charset=utf-8
 ###
 GET {{api}}/inventories/{{productId}}
 Accept: application/json
+
+###
+POST {{api}}/changeprice/{{productId}}
+Content-Type: application/json; charset=utf-8
+
+{
+  "oldPrice": 100,
+  "newPrice": 15
+}
