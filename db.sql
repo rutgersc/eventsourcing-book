@@ -4,6 +4,13 @@
 );
 
 
+CREATE TABLE "CartsWithProducts" (
+    "CartId" uuid NOT NULL,
+    "ProductId" uuid NOT NULL,
+    CONSTRAINT "PK_CartsWithProducts" PRIMARY KEY ("CartId", "ProductId")
+);
+
+
 CREATE TABLE "Inventories" (
     "ProductId" uuid NOT NULL,
     "Inventory" integer NOT NULL,
@@ -26,7 +33,9 @@ CREATE TABLE "Pricing" (
 
 CREATE TABLE "CartItem" (
     "CartItemId" uuid NOT NULL,
+    "ItemId" uuid NOT NULL,
     "CartId" uuid NOT NULL,
+    "ProductId" uuid NOT NULL,
     CONSTRAINT "PK_CartItem" PRIMARY KEY ("CartItemId"),
     CONSTRAINT "FK_CartItem_Carts_CartId" FOREIGN KEY ("CartId") REFERENCES "Carts" ("CartId") ON DELETE CASCADE
 );

@@ -38,14 +38,14 @@ public static class CartDecider
                     : new CartEvent[] { itemAddedEvent };
 
             case (RemoveItemCommand removeItemCommand, Cart cart):
-                if (!cart.Items.Any(item => item.Value == removeItemCommand.ItemId))
+                if (!cart.Items.ContainsKey(removeItemCommand.ItemId))
                 {
                     return new CartItemIsNotInCart();
                 }
 
                 return new CartEvent[]
                 {
-                    new ItemRemovedEvent(new CartItemId(removeItemCommand.ItemId))
+                    new ItemRemovedEvent(removeItemCommand.ItemId)
                 };
 
             case (_, CartInitialState):

@@ -13,7 +13,7 @@ public abstract record CartCommand
         : CartCommand;
 
     public sealed record RemoveItemCommand(
-        Guid ItemId)
+        CartItemId ItemId)
         : CartCommand;
 
     public sealed record ClearCartCommand()

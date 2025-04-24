@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using EventsourcingBook.Domain.Products;
 using static EventsourcingBook.Domain.Carts.CartEvent;
 
 namespace EventsourcingBook.Domain.Carts;
@@ -10,7 +11,8 @@ public abstract record CartState
     public sealed record CartInitialState
         : CartState;
 
-    public sealed record Cart(ImmutableHashSet<CartItemId> Items)
+    public sealed record Cart(
+        ImmutableDictionary<CartItemId, ProductId> Items)
         : CartState;
 
     public static CartState Evolve(CartState state, CartEvent @event)
@@ -18,16 +20,26 @@ public abstract record CartState
         switch (state, @event)
         {
             case (CartInitialState, CartCreatedEvent):
-                return new Cart([]);
+                return new Cart(
+                    Items: ImmutableDictionary<CartItemId, ProductId>.Empty);
 
             case (Cart cart, ItemAddedEvent addedEvent):
-                return cart with { Items = cart.Items.Add(addedEvent.ItemId) };
+                return cart with
+                {
+                    Items = cart.Items.Add(addedEvent.ItemId, addedEvent.ProductId)
+                };
 
             case (Cart cart, ItemRemovedEvent removedEvent):
-                return cart with { Items = cart.Items.Remove(removedEvent.ItemId) };
+                return cart with
+                {
+                    Items = cart.Items.Remove(removedEvent.ItemId)
+                };
 
             case (Cart cart, CartCleared):
-                return cart with { Items = cart.Items.Clear() };
+                return cart with
+                {
+                    Items = cart.Items.Clear()
+                };
 
             default:
                 return state;
