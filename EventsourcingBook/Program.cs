@@ -30,7 +30,6 @@ var eventStoreDbClient = new EventStoreClient(EventStoreClientSettings.Create("e
 using var scope = app.Services.CreateScope();
 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-
 // Application
 var runApplicationEventSourced = false;
 var cartStateStored = CartDecider.Decider.ConfigureState(new CartStateEntityFrameworkRepository(dbContext));
@@ -54,14 +53,19 @@ InventoryDispatch inventoryDispatch = runApplicationEventSourced
     ? pricingEventStored.ExecuteCommand
     : pricingStateStored.ExecuteCommand;
 
-await inventoryEventStored.Persistence.Subscribe(async (id, inventoryEvent) =>
+await inventoryEventStored.Persistence.Subscribe(async (productId, inventoryEvent) =>
 {
-    await InventoriesReadModelProjector.Project(dbContext, id, inventoryEvent);
+    await InventoriesReadModelProjector.Project(dbContext, productId, inventoryEvent);
 });
 
-await cartEventStored.Persistence.Subscribe(async (id, inventoryEvent) =>
+await cartEventStored.Persistence.Subscribe(async (cartId, inventoryEvent) =>
 {
-    await CartsWithProductsReadModelProjector.Project(dbContext, id, inventoryEvent);
+    await CartsWithProductsReadModelProjector.Project(dbContext, cartId, inventoryEvent);
+});
+
+await pricingEventStored.Persistence.Subscribe(async (productId, @event) =>
+{
+    await ArchiveItemAutomationProcessor.React(dbContext, cartEventStored, productId, @event);
 });
 
 IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollection<TEvent>, TError> result) where TError : notnull
@@ -165,13 +169,13 @@ app.MapPost("/changeprice/{productId}",
         return ResultToHttpResponse(productId, result);
     });
 
-app.MapGet("/cartwithproducts/{productId:Guid}",
-    async (Guid productId) =>
+app.MapGet("/cartwithproducts/{productId}",
+    async (ProductId productId) =>
     {
         if (runApplicationEventSourced)
         {
             var cartsWithProducts = await dbContext.CartsWithProducts
-                .Where(entity => entity.ProductId == productId)
+                .Where(entity => entity.ProductId == productId.Value)
                 .ToListAsync();
 
             return new CartsWithProductsReadModel(cartsWithProducts);
@@ -179,7 +183,7 @@ app.MapGet("/cartwithproducts/{productId:Guid}",
         else
         {
             var cartsWithProducts  = await dbContext.Carts
-                .Where(entity => entity.CartItems.Any(c => c.ProductId == productId))
+                .Where(entity => entity.CartItems.Any(c => c.ProductId == productId.Value))
                 .Select(entity => new CartsWithProductsReadModelEntity
                 {
                     CartId = entity.CartId,
@@ -189,6 +193,13 @@ app.MapGet("/cartwithproducts/{productId:Guid}",
 
             return new CartsWithProductsReadModel(cartsWithProducts);
         }
+    });
+
+app.MapPost("/archiveitem/{cartId}",
+    async (CartId cartId, [FromBody] ArchivePayload payload) =>
+    {
+        var result = await cartDispatch(cartId, payload.ToCommand());
+        return ResultToHttpResponse(cartId, result);
     });
 
 app.Run();
@@ -241,3 +252,8 @@ record ChangePricePayload(
 }
 
 record CartsWithProductsReadModel(List<CartsWithProductsReadModelEntity> Data);
+
+record ArchivePayload(Guid ProductId)
+{
+    public CartCommand.ArchiveItemCommand ToCommand() => new(new ProductId(ProductId));
+}

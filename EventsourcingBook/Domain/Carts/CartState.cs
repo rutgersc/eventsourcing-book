@@ -41,6 +41,9 @@ public abstract record CartState
                     Items = cart.Items.Clear()
                 };
 
+            case (Cart cart, ItemArchivedEvent):
+                return cart with { Items = cart.Items.Clear() };
+
             default:
                 return state;
         }

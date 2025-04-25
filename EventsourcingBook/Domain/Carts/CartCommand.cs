@@ -1,4 +1,6 @@
-﻿namespace EventsourcingBook.Domain.Carts;
+﻿using EventsourcingBook.Domain.Products;
+
+namespace EventsourcingBook.Domain.Carts;
 
 public abstract record CartCommand
 {
@@ -17,5 +19,9 @@ public abstract record CartCommand
         : CartCommand;
 
     public sealed record ClearCartCommand()
+        : CartCommand;
+
+    public sealed record ArchiveItemCommand(
+        ProductId ProductId)
         : CartCommand;
 }

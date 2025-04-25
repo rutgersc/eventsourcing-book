@@ -80,3 +80,10 @@ Content-Type: application/json; charset=utf-8
 ###
 GET {{api}}/cartwithproducts/{{productId}}
 Accept: application/json
+
+###
+POST {{api}}/archiveitem/{{cartId}}
+Content-Type: application/json; charset=utf-8
+
+{
+}

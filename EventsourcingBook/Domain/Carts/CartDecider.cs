@@ -54,6 +54,14 @@ public static class CartDecider
             case (ClearCartCommand, Cart):
                 return new CartEvent[] { new CartCleared() };
 
+            case (ArchiveItemCommand cmd, Cart cart):
+                foreach (var kvp in cart.Items.Where(kvp => kvp.Value == cmd.ProductId))
+                {
+                    return new CartEvent[] { new ItemRemovedEvent(kvp.Key) };
+                }
+
+                return new CartEvent[] { };
+
             default:
                 return new CartEvent[] { };
         }

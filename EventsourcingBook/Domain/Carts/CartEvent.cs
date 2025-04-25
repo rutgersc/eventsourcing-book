@@ -27,5 +27,4 @@ public abstract record CartEvent
     public sealed record ItemArchivedEvent(
         CartItemId ItemId)
         : CartEvent;
-
 }
