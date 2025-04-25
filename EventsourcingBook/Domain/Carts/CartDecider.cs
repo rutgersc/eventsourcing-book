@@ -62,6 +62,24 @@ public static class CartDecider
 
                 return new CartEvent[] { };
 
+
+            case (SubmitCartCommand cmd, SubmittedCart):
+                return new CartError.CannotSubmitEmptyCart();
+
+            case (SubmitCartCommand cmd, Cart cart):
+                if (cart.Items.IsEmpty)
+                {
+                    return new CartError.CannotSubmitEmptyCart();
+                }
+
+                var submittedEvent = new CartSubmittedEvent(
+                    OrderedProducts: cart.Items.Values
+                        .Select(productId => new OrderedProduct(productId, cart.ProductPrices[productId]))
+                        .ToList(),
+                    TotalPrice: cart.Items.Values.Sum(productId => cart.ProductPrices[productId]) );
+
+                return new CartEvent[] { submittedEvent };
+
             default:
                 return new CartEvent[] { };
         }

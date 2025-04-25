@@ -9,4 +9,6 @@ public abstract record CartError
     public sealed record CartItemSizeExceeded() : CartError;
 
     public sealed record CartItemIsNotInCart() : CartError;
+
+    public sealed record CannotSubmitEmptyCart : CartError;
 }
