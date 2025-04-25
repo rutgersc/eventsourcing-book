@@ -11,6 +11,8 @@ public class CartStateEntityFrameworkRepository(AppDbContext dbContext)
     {
         var cart = await dbContext.Carts
             .Include(c => c.CartItems)
+            .Include(e => e.SubmittedCart)
+            .ThenInclude(e => e!.OrderedProducts)
             .FirstOrDefaultAsync(cart => cart.CartId == id.Value);
 
         return cart?.ToDomain() ?? initialState;

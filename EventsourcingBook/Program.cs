@@ -202,6 +202,14 @@ app.MapPost("/archiveitem/{cartId}",
         return ResultToHttpResponse(cartId, result);
     });
 
+app.MapPost("/submitcart/{cartId}",
+    async (CartId cartId, [FromBody] SubmitCartPayload payload) =>
+    {
+        var result = await cartEventStored.ExecuteCommand(cartId, payload.ToCommand());
+
+        return ResultToHttpResponse(cartId, result);
+    });
+
 app.Run();
 
 record AddItemPayload(
@@ -256,4 +264,9 @@ record CartsWithProductsReadModel(List<CartsWithProductsReadModelEntity> Data);
 record ArchivePayload(Guid ProductId)
 {
     public CartCommand.ArchiveItemCommand ToCommand() => new(new ProductId(ProductId));
+}
+
+record SubmitCartPayload(Guid ProductId)
+{
+    public CartCommand.SubmitCartCommand ToCommand() => new();
 }

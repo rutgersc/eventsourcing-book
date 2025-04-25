@@ -10,9 +10,27 @@ public class Cart
 
     public List<CartItem> CartItems { get; set; } = new();
 
+    public SubmittedCart? SubmittedCart { get; set; }
+
     public void ApplyState(CartState cartState)
     {
-        if (cartState is CartState.Cart cart)
+        switch (cartState)
+        {
+            case CartState.CartInitialState:
+                break;
+
+            case CartState.Cart cart:
+                ApplyCartState(cart);
+                break;
+
+            case CartState.SubmittedCart submittedState:
+                ApplySubmittedState(submittedState);
+                break;
+        }
+
+        return;
+
+        void ApplyCartState(CartState.Cart cart)
         {
             this.CartItems = cart.Items
                 .Select(productByCartItem =>
@@ -23,19 +41,38 @@ public class Cart
 
                     cartItem.ItemId = productByCartItem.Key.Value;
                     cartItem.ProductId = productByCartItem.Value.Value;
+                    cartItem.Price = cart.ProductPrices[productByCartItem.Value];
                     return cartItem;
                 })
                 .ToList();
         }
+
+        void ApplySubmittedState(CartState.SubmittedCart submittedState)
+        {
+            this.SubmittedCart ??= new SubmittedCart();
+        }
     }
 
-    public CartState.Cart ToDomain()
+    public CartState ToDomain()
     {
-        return new CartState.Cart(
+        var cart = new CartState.Cart(
             Items: CartItems
                 .ToImmutableDictionary(
                     item => new CartItemId(item.ItemId),
-                    item => new ProductId(item.ProductId)));
+                    item => new ProductId(item.ProductId)),
+            ProductPrices: CartItems
+                .ToImmutableDictionary(
+                    item => new ProductId(item.ProductId),
+                    item => item.Price));
+
+        if (this.SubmittedCart == null)
+        {
+            return cart;
+        }
+
+        var submittedState = new CartState.SubmittedCart();
+
+        return submittedState;
     }
 }
 
@@ -48,4 +85,29 @@ public class CartItem
     public Guid CartId { get; set; }
 
     public Guid ProductId { get; set; }
+
+    public decimal Price { get; set; }
+}
+
+
+public class SubmittedCart
+{
+    public Guid CartId { get; set; }
+
+    public decimal TotalPrice { get; set; }
+
+    public List<OrderedProducts> OrderedProducts { get; set; } = new();
+
+    public bool PublicationFailed { get; set; }
+
+    public bool Published { get; set; }
+}
+
+public class OrderedProducts
+{
+    public Guid CartId { get; set; }
+
+    public Guid ProductId { get; set; }
+
+    public decimal Price { get; set; }
 }

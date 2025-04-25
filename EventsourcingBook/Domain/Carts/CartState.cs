@@ -12,7 +12,11 @@ public abstract record CartState
         : CartState;
 
     public sealed record Cart(
-        ImmutableDictionary<CartItemId, ProductId> Items)
+        ImmutableDictionary<CartItemId, ProductId> Items,
+        ImmutableDictionary<ProductId, decimal> ProductPrices)
+        : CartState;
+
+    public sealed record SubmittedCart()
         : CartState;
 
     public static CartState Evolve(CartState state, CartEvent @event)
@@ -21,28 +25,39 @@ public abstract record CartState
         {
             case (CartInitialState, CartCreatedEvent):
                 return new Cart(
-                    Items: ImmutableDictionary<CartItemId, ProductId>.Empty);
+                    Items: ImmutableDictionary<CartItemId, ProductId>.Empty,
+                    ProductPrices: ImmutableDictionary<ProductId, decimal>.Empty);
 
             case (Cart cart, ItemAddedEvent addedEvent):
                 return cart with
                 {
-                    Items = cart.Items.Add(addedEvent.ItemId, addedEvent.ProductId)
+                    Items = cart.Items.Add(addedEvent.ItemId, addedEvent.ProductId) ,
+                    ProductPrices = cart.ProductPrices.Add(addedEvent.ProductId, addedEvent.Price)
                 };
 
-            case (Cart cart, ItemRemovedEvent removedEvent):
+            case (Cart cart, ItemRemovedEvent ev):
                 return cart with
                 {
-                    Items = cart.Items.Remove(removedEvent.ItemId)
+                    Items = cart.Items.Remove(ev.ItemId),
+                    ProductPrices = cart.ProductPrices.Remove(cart.Items[ev.ItemId])
                 };
 
             case (Cart cart, CartCleared):
                 return cart with
                 {
-                    Items = cart.Items.Clear()
+                    Items = cart.Items.Clear(),
+                    ProductPrices = cart.ProductPrices.Clear()
                 };
 
-            case (Cart cart, ItemArchivedEvent):
-                return cart with { Items = cart.Items.Clear() };
+            case (Cart cart, ItemArchivedEvent ev):
+                return cart with
+                {
+                    Items = cart.Items.Remove(ev.ItemId),
+                    ProductPrices = cart.ProductPrices.Remove(cart.Items[ev.ItemId])
+                };
+
+            case (Cart, CartSubmittedEvent):
+                return new SubmittedCart();
 
             default:
                 return state;

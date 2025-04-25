@@ -27,4 +27,11 @@ public abstract record CartEvent
     public sealed record ItemArchivedEvent(
         CartItemId ItemId)
         : CartEvent;
+
+    public sealed record CartSubmittedEvent(
+        List<OrderedProduct> OrderedProducts,
+        decimal TotalPrice)
+        : CartEvent;
+
+    public sealed record OrderedProduct(ProductId ProductId, decimal Price);
 }

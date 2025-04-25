@@ -36,19 +36,15 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Cart>()
             .HasMany(c => c.CartItems)
             .WithOne() // assuming CartItem has no navigation property back to Cart
-            .HasForeignKey(ci => ci.CartId);
+            .HasForeignKey(ci => ci.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Cart>()
+            .HasOne(c => c.SubmittedCart)
+            .WithOne()
+            .HasForeignKey<SubmittedCart>(sc => sc.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // CartItem
-        modelBuilder.Entity<CartItem>()
-            .HasKey(ci => ci.CartItemId);
-
-        modelBuilder.Entity<InventoryEntity>()
-            .HasKey(e => e.ProductId);
-
-        modelBuilder.Entity<PricingEntity>()
-            .HasKey(e => e.ProductId);
-
-        // Reamodels
+        // ReadModels
         modelBuilder.Entity<InventoriesReadModelEntity>()
             .HasNoKey();
 
@@ -56,5 +52,11 @@ public class AppDbContext : DbContext
             .HasKey(
                 nameof(CartsWithProductsReadModelEntity.CartId),
                 nameof(CartsWithProductsReadModelEntity.ProductId));
+
+        modelBuilder.Entity<InventoryEntity>()
+            .HasKey(e => e.ProductId);
+
+        modelBuilder.Entity<PricingEntity>()
+            .HasKey(e => e.ProductId);
     }
 }

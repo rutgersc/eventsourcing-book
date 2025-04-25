@@ -83,6 +83,10 @@ Accept: application/json
 
 ###
 POST {{api}}/archiveitem/{{cartId}}
+
+###
+POST {{api}}/submitcart/{{cartId}}
+Accept: application/json
 Content-Type: application/json; charset=utf-8
 
 {

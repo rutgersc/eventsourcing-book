@@ -24,4 +24,7 @@ public abstract record CartCommand
     public sealed record ArchiveItemCommand(
         ProductId ProductId)
         : CartCommand;
+
+    public sealed record SubmitCartCommand
+        : CartCommand;
 }
