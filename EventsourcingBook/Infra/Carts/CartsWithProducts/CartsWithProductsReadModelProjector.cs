@@ -8,7 +8,9 @@ public static class CartsWithProductsReadModelProjector
 {
     public static async Task Project(AppDbContext dbContext, CartId id, CartEvent @event)
     {
-        switch (@event)
+        var upcastedEvent = CartEvent.Upcast(@event);
+
+        switch (upcastedEvent)
         {
             case CartCreatedEvent:
                 break;
@@ -20,6 +22,9 @@ public static class CartsWithProductsReadModelProjector
 
                 dbContext.CartsWithProducts.RemoveRange(entitiesToRemove);
                 break;
+
+            case ItemAddedEventV1 ev:
+                throw new NotImplementedException("forgot to upcast?");
 
             case ItemAddedEvent ev:
                 dbContext.CartsWithProducts.Add(new CartsWithProductsReadModelEntity

@@ -31,7 +31,8 @@ public static class CartDecider
                     Image: addItemCommand.Image,
                     Price: addItemCommand.Price,
                     ItemId: new CartItemId(addItemCommand.ItemId),
-                    ProductId: new ProductId(addItemCommand.ProductId));
+                    ProductId: new ProductId(addItemCommand.ProductId),
+                    FingerPrint: addItemCommand.FingerPrint);
 
                 return state is CartInitialState
                     ? new CartEvent[] { new CartCreatedEvent(), itemAddedEvent }

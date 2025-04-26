@@ -1,4 +1,5 @@
 using Deciders;
+using EventsourcingBook.Domain;
 using EventsourcingBook.Domain.Carts;
 using EventsourcingBook.Domain.Carts.ReadModels;
 using EventsourcingBook.Domain.Inventories;
@@ -248,7 +249,8 @@ record AddItemPayload(
             Image: item.image,
             Price: item.price,
             ItemId: item.itemId,
-            ProductId: item.productId);
+            ProductId: item.productId,
+            FingerPrint: DeviceFingerPrint.Calculate());
     }
 }
 

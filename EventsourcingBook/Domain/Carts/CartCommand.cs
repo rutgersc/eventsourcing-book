@@ -11,7 +11,8 @@ public abstract record CartCommand
         string Image,
         decimal Price,
         Guid ItemId,
-        Guid ProductId)
+        Guid ProductId,
+        DeviceFingerPrint FingerPrint)
         : CartCommand;
 
     public sealed record RemoveItemCommand(

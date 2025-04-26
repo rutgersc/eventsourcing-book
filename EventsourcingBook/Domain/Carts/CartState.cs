@@ -29,12 +29,18 @@ public abstract record CartState
 
     public static CartState Evolve(CartState state, CartEvent @event)
     {
-        switch (state, @event)
+        var upcastedEvent = CartEvent.Upcast(@event);
+
+        switch (state, upcastedEvent)
         {
             case (CartInitialState, CartCreatedEvent):
                 return new Cart(
                     Items: ImmutableDictionary<CartItemId, ProductId>.Empty,
                     ProductPrices: ImmutableDictionary<ProductId, decimal>.Empty);
+
+
+            case (_, ItemAddedEventV1):
+                throw new NotImplementedException("forgot to upcast?");
 
             case (Cart cart, ItemAddedEvent addedEvent):
                 return cart with

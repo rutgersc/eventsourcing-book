@@ -1,4 +1,4 @@
-﻿using EventsourcingBook.Domain.Inventories;
+using EventsourcingBook.Domain.Inventories;
 using EventsourcingBook.Domain.Products;
 using EventsourcingBook.Infra.Common;
 using EventStore.Client;
