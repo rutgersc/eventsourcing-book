@@ -26,16 +26,11 @@ builder.Services
 var app = builder.Build();
 app.MapOpenApi();
 
+var publishExternalEvent = new MockEventPublisher();
+
 var eventStoreDbClient = new EventStoreClient(EventStoreClientSettings.Create("esdb://localhost:2113?tls=false"));
 using var scope = app.Services.CreateScope();
 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-
-var getDbContext = () =>
-{
-    using var scope = app.Services.CreateScope();
-    return scope.ServiceProvider.GetRequiredService<AppDbContext>();
-};
 
 // Application
 var runApplicationEventSourced = false;
@@ -73,6 +68,15 @@ await cartEventStored.Persistence.Subscribe(async (cartId, inventoryEvent) =>
 await pricingEventStored.Persistence.Subscribe(async (productId, @event) =>
 {
     await ArchiveItemAutomationProcessor.React(dbContext, cartEventStored, productId, @event);
+});
+
+await cartEventStored.Persistence.Subscribe(async (cartId, cartEvent) =>
+{
+    if (cartEvent is CartEvent.CartSubmittedEvent cartSubmittedEvent)
+    {
+        var publishCommand = new CartCommand.PublishCartCommand(cartSubmittedEvent.OrderedProducts, cartSubmittedEvent.TotalPrice);
+        _ = await PublishCartCommandHandler.Handle(cartEventStored, publishExternalEvent, cartId, publishCommand);
+    }
 });
 
 IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollection<TEvent>, TError> result) where TError : notnull
@@ -212,7 +216,17 @@ app.MapPost("/archiveitem/{cartId}",
 app.MapPost("/submitcart/{cartId}",
     async (CartId cartId, [FromBody] SubmitCartPayload payload) =>
     {
-        var result = await cartEventStored.ExecuteCommand(cartId, payload.ToCommand());
+        var result = await cartDispatch(cartId, payload.ToCommand());
+        return ResultToHttpResponse(cartId, result);
+    });
+
+app.MapPost("/publishcart/{cartId}",
+    async (CartId cartId, [FromBody] PublishCartPayload payload) =>
+    {
+        var state = await cartEventStored.ReadStateView(CartDecider.Decider.StateView, cartId) as CartState.SubmittedCart;
+
+        var publishCommand = new CartCommand.PublishCartCommand(state?.OrderedProducts ?? [], state?.TotalPrice ?? 0);
+        var result = await PublishCartCommandHandler.Handle(cartEventStored, publishExternalEvent, cartId, publishCommand);
 
         return ResultToHttpResponse(cartId, result);
     });
@@ -273,7 +287,12 @@ record ArchivePayload(Guid ProductId)
     public CartCommand.ArchiveItemCommand ToCommand() => new(new ProductId(ProductId));
 }
 
-record SubmitCartPayload(Guid ProductId)
+record SubmitCartPayload()
 {
     public CartCommand.SubmitCartCommand ToCommand() => new();
+}
+
+record PublishCartPayload(List<CartEvent.OrderedProduct> OrderedProducts, decimal TotalPrice)
+{
+    public CartCommand.PublishCartCommand ToCommand() => new(OrderedProducts, TotalPrice);
 }

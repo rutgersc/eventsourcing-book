@@ -11,4 +11,8 @@ public abstract record CartError
     public sealed record CartItemIsNotInCart() : CartError;
 
     public sealed record CannotSubmitEmptyCart : CartError;
+
+    public sealed record CannotPublishUnsubmittedCart : CartError;
+
+    public sealed record CannotPublishCartTwice : CartError;
 }

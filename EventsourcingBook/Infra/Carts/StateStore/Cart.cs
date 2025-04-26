@@ -12,6 +12,8 @@ public class Cart
 
     public SubmittedCart? SubmittedCart { get; set; }
 
+    public PublishedCart? PublishedCart { get; set; }
+
     public void ApplyState(CartState.Cart cart)
     {
         this.CartItems = cart.Items
@@ -42,6 +44,7 @@ public class Cart
                 break;
 
             case CartState.SubmittedCart submittedState:
+                this.ApplyState(submittedState.UnsubmittedCart);
                 this.ApplyState(submittedState);
                 break;
         }
@@ -50,6 +53,21 @@ public class Cart
     public void ApplyState(CartState.SubmittedCart submittedState)
     {
         this.SubmittedCart ??= new SubmittedCart();
+        this.SubmittedCart.TotalPrice = submittedState.TotalPrice;
+        this.SubmittedCart.OrderedProducts = submittedState.OrderedProducts
+            .Select(v =>
+            {
+                var orderedProduct = this.SubmittedCart.OrderedProducts
+                    .FirstOrDefault(
+                        t => t.ProductId == v.ProductId.Value,
+                        new OrderedProducts());
+
+                orderedProduct.ProductId = v.ProductId.Value;
+                orderedProduct.Price = v.Price;
+                return orderedProduct;
+            })
+            .ToList();
+        this.SubmittedCart.PublicationFailed = submittedState.PublicationFailed;
     }
 
     public CartState ToDomain()
@@ -69,9 +87,17 @@ public class Cart
             return cart;
         }
 
-        var submittedState = new CartState.SubmittedCart();
+        var submittedState = new CartState.SubmittedCart(
+            cart,
+            OrderedProducts: this.SubmittedCart.OrderedProducts
+                .Select(op => new CartEvent.OrderedProduct(new ProductId(op.ProductId), op.Price))
+                .ToList(),
+            TotalPrice: this.SubmittedCart.TotalPrice,
+            PublicationFailed: this.SubmittedCart.PublicationFailed);
 
-        return submittedState;
+        return this.PublishedCart == null
+            ? submittedState
+            : new CartState.PublishedCart(submittedState);
     }
 }
 
@@ -109,4 +135,9 @@ public class OrderedProducts
     public Guid ProductId { get; set; }
 
     public decimal Price { get; set; }
+}
+
+public class PublishedCart
+{
+    public Guid CartId { get; set; }
 }

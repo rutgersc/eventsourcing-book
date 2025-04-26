@@ -16,7 +16,15 @@ public abstract record CartState
         ImmutableDictionary<ProductId, decimal> ProductPrices)
         : CartState;
 
-    public sealed record SubmittedCart()
+    public sealed record SubmittedCart(
+        Cart UnsubmittedCart,
+        List<OrderedProduct> OrderedProducts,
+        decimal TotalPrice,
+        bool PublicationFailed)
+        : CartState;
+
+    public sealed record PublishedCart(
+        SubmittedCart UnpublishedCart)
         : CartState;
 
     public static CartState Evolve(CartState state, CartEvent @event)
@@ -56,8 +64,18 @@ public abstract record CartState
                     ProductPrices = cart.ProductPrices.Remove(cart.Items[ev.ItemId])
                 };
 
-            case (Cart, CartSubmittedEvent):
-                return new SubmittedCart();
+            case (Cart cart, CartSubmittedEvent ev):
+                return new SubmittedCart(
+                    cart,
+                    ev.OrderedProducts,
+                    ev.TotalPrice,
+                    PublicationFailed: false);
+
+            case (SubmittedCart submittedCart, CartPublicationFailedEvent):
+                return submittedCart with { PublicationFailed = true };
+
+            case (SubmittedCart submittedCart, CartPublishedEvent):
+                return new PublishedCart(submittedCart);
 
             default:
                 return state;

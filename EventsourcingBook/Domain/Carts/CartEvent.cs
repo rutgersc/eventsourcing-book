@@ -33,5 +33,11 @@ public abstract record CartEvent
         decimal TotalPrice)
         : CartEvent;
 
+    public sealed record CartPublishedEvent()
+        : CartEvent;
+
+    public sealed record CartPublicationFailedEvent()
+        : CartEvent;
+
     public sealed record OrderedProduct(ProductId ProductId, decimal Price);
 }
