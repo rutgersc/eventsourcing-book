@@ -1,4 +1,4 @@
-﻿global using CartEventStored = Deciders.DeciderEventInterpreter<
+global using CartEventStored = Deciders.DeciderEventInterpreter<
     EventsourcingBook.Domain.Carts.CartId,
     EventsourcingBook.Domain.Carts.CartCommand,
     EventsourcingBook.Domain.Carts.CartEvent,

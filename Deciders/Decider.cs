@@ -9,6 +9,8 @@ public record Decider<TId, TCommand, TEvent, TState, TErr>(
     where TId : notnull
     where TErr : notnull
 {
+    public StateView<TEvent, TState> StateView => new(Evolve, InitialState);
+
     public Result<(IReadOnlyCollection<TEvent> NewEvents, TState NewState), TErr> StateChange(
         IReadOnlyCollection<TEvent> existingEvents,
         TState existingState,

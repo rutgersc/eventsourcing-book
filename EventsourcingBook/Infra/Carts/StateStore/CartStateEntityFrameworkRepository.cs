@@ -10,9 +10,10 @@ public class CartStateEntityFrameworkRepository(AppDbContext dbContext)
     public async Task<CartState> LoadState(CartId id, CartState initialState)
     {
         var cart = await dbContext.Carts
-            .Include(c => c.CartItems)
+            .Include(e => e.CartItems)
             .Include(e => e.SubmittedCart)
-            .ThenInclude(e => e!.OrderedProducts)
+            .ThenInclude(e => e.OrderedProducts)
+            .Include(e => e.PublishedCart)
             .FirstOrDefaultAsync(cart => cart.CartId == id.Value);
 
         return cart?.ToDomain() ?? initialState;

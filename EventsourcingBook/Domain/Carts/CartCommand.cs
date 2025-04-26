@@ -27,4 +27,13 @@ public abstract record CartCommand
 
     public sealed record SubmitCartCommand
         : CartCommand;
+
+    public sealed record PublishCartCommand(
+        List<CartEvent.OrderedProduct> OrderedProducts,
+        decimal TotalPrice)
+        : CartCommand;
+
+    // NOTE: not in the original
+    public sealed record PublishCartFailedCommand()
+        : CartCommand;
 }

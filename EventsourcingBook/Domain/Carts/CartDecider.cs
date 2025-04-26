@@ -64,12 +64,12 @@ public static class CartDecider
 
 
             case (SubmitCartCommand cmd, SubmittedCart):
-                return new CartError.CannotSubmitEmptyCart();
+                return new CannotSubmitEmptyCart();
 
             case (SubmitCartCommand cmd, Cart cart):
                 if (cart.Items.IsEmpty)
                 {
-                    return new CartError.CannotSubmitEmptyCart();
+                    return new CannotSubmitEmptyCart();
                 }
 
                 var submittedEvent = new CartSubmittedEvent(
@@ -79,6 +79,19 @@ public static class CartDecider
                     TotalPrice: cart.Items.Values.Sum(productId => cart.ProductPrices[productId]) );
 
                 return new CartEvent[] { submittedEvent };
+
+
+            case (PublishCartCommand, Cart):
+                return new CannotPublishUnsubmittedCart();
+
+            case (PublishCartCommand, PublishedCart):
+                return new CannotPublishCartTwice();
+
+            case (PublishCartCommand, SubmittedCart):
+                return new CartEvent[] { new CartPublishedEvent() };
+
+            case (PublishCartFailedCommand, SubmittedCart):
+                return new CartEvent[] { new CartPublicationFailedEvent() };
 
             default:
                 return new CartEvent[] { };

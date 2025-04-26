@@ -44,7 +44,29 @@ public class AppDbContext : DbContext
             .HasForeignKey<SubmittedCart>(sc => sc.CartId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ReadModels
+        // CartItem
+        modelBuilder.Entity<CartItem>()
+            .HasKey(ci => ci.CartItemId);
+
+        // SubmittedCart
+        modelBuilder.Entity<SubmittedCart>()
+            .HasKey(sc => sc.CartId);
+
+        modelBuilder.Entity<SubmittedCart>()
+            .HasMany(sc => sc.OrderedProducts)
+            .WithOne()
+            .HasForeignKey(op => op.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // OrderedProducts
+        modelBuilder.Entity<OrderedProducts>()
+            .HasKey(op => new { op.CartId, op.ProductId });
+
+        // PublishedCart
+        modelBuilder.Entity<PublishedCart>()
+            .HasKey(pc => pc.CartId);
+
+        // Reamodels
         modelBuilder.Entity<InventoriesReadModelEntity>()
             .HasNoKey();
 
