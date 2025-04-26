@@ -1,4 +1,5 @@
 using Deciders;
+using EventsourcingBook.Domain;
 using EventsourcingBook.Domain.Carts;
 using EventsourcingBook.Domain.Carts.ReadModels;
 using EventsourcingBook.Domain.Inventories;
@@ -75,7 +76,7 @@ await cartEventStored.Persistence.Subscribe(async (cartId, cartEvent) =>
     if (cartEvent is CartEvent.CartSubmittedEvent cartSubmittedEvent)
     {
         var publishCommand = new CartCommand.PublishCartCommand(cartSubmittedEvent.OrderedProducts, cartSubmittedEvent.TotalPrice);
-        _ = await PublishCartCommandHandler.Handle(cartEventStored, publishExternalEvent, cartId, publishCommand);
+        _ = await PublishCartCommandHandler.Handle(cartDispatch, publishExternalEvent, cartId, publishCommand);
     }
 });
 
@@ -248,7 +249,8 @@ record AddItemPayload(
             Image: item.image,
             Price: item.price,
             ItemId: item.itemId,
-            ProductId: item.productId);
+            ProductId: item.productId,
+            FingerPrint: DeviceFingerPrint.Calculate());
     }
 }
 

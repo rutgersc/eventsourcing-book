@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Deciders;
+using EventsourcingBook.Domain.Carts.Upcaster;
 using static EventsourcingBook.Domain.Carts.CartEvent;
 
 namespace EventsourcingBook.Domain.Carts.ReadModels;
@@ -14,12 +15,17 @@ public record CartItemsReadModel(
 
     public static CartItemsReadModel Evolve(CartItemsReadModel state, CartEvent @event)
     {
-        switch (@event)
+        var upcastedEvent = CartEvent.Upcast(@event);
+
+        switch (upcastedEvent)
         {
             case CartCreatedEvent ev:
                 return new CartItemsReadModel(
                     CartItems: [],
                     TotalPrice: 0);
+
+            case ItemAddedEventV1:
+                throw new NotImplementedException("forgot to upcast?");
 
             case ItemAddedEvent ev:
                 return state with
@@ -56,7 +62,8 @@ public record CartItem(
     string Description,
     string Image,
     decimal Price,
-    Guid ProductId)
+    Guid ProductId,
+    DeviceFingerPrint FingerPrint)
 {
     public static CartItem FromEvent(ItemAddedEvent ev)
     {
@@ -65,6 +72,7 @@ public record CartItem(
             Image: ev.Image,
             Price: ev.Price,
             ItemId: ev.ItemId.Value,
-            ProductId: ev.ProductId.Value);
+            ProductId: ev.ProductId.Value,
+            FingerPrint: ev.FingerPrint);
     }
 };
