@@ -31,25 +31,6 @@ public class Cart
             .ToList();
     }
 
-
-    public void ApplyState(CartState cartState)
-    {
-        switch (cartState)
-        {
-            case CartState.CartInitialState:
-                break;
-
-            case CartState.Cart cart:
-                this.ApplyState(cart);
-                break;
-
-            case CartState.SubmittedCart submittedState:
-                this.ApplyState(submittedState.UnsubmittedCart);
-                this.ApplyState(submittedState);
-                break;
-        }
-    }
-
     public void ApplyState(CartState.SubmittedCart submittedState)
     {
         this.SubmittedCart ??= new SubmittedCart();
@@ -70,17 +51,44 @@ public class Cart
         this.SubmittedCart.PublicationFailed = submittedState.PublicationFailed;
     }
 
+    public void ApplyState(CartState.PublishedCart publishedCart)
+    {
+        this.PublishedCart ??= new PublishedCart();
+    }
+
+    public void ApplyState(CartState cartState)
+    {
+        switch (cartState)
+        {
+            case CartState.CartInitialState:
+                break;
+
+            case CartState.Cart cart:
+                this.ApplyState(cart);
+                break;
+
+            case CartState.SubmittedCart submittedState:
+                this.ApplyState(submittedState.UnsubmittedCart);
+                this.ApplyState(submittedState);
+                break;
+
+            case CartState.PublishedCart publishedCart:
+                this.ApplyState(publishedCart);
+                break;
+        }
+    }
+
     public CartState ToDomain()
     {
         var cart = new CartState.Cart(
-            Items: CartItems
-                .ToImmutableDictionary(
-                    item => new CartItemId(item.ItemId),
-                    item => new ProductId(item.ProductId)),
-            ProductPrices: CartItems
-                .ToImmutableDictionary(
-                    item => new ProductId(item.ProductId),
-                    item => item.Price));
+           Items: CartItems
+               .ToImmutableDictionary(
+                   item => new CartItemId(item.ItemId),
+                   item => new ProductId(item.ProductId)),
+           ProductPrices: CartItems
+               .ToImmutableDictionary(
+                   item => new ProductId(item.ProductId),
+                   item => item.Price));
 
         if (this.SubmittedCart == null)
         {
@@ -107,13 +115,12 @@ public class CartItem
 
     public Guid ItemId { get; set; }
 
-    public Guid CartId { get; set; }
-
     public Guid ProductId { get; set; }
+
+    public Guid CartId { get; set; }
 
     public decimal Price { get; set; }
 }
-
 
 public class SubmittedCart
 {

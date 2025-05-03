@@ -1,5 +1,6 @@
 ﻿using EventsourcingBook.Infra.Carts;
 using EventsourcingBook.Infra.Inventories;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventsourcingBook.Infra;
@@ -36,17 +37,22 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Cart>()
             .HasMany(c => c.CartItems)
             .WithOne() // assuming CartItem has no navigation property back to Cart
-            .HasForeignKey(ci => ci.CartId);
+            .HasForeignKey(ci => ci.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Cart>()
+            .HasOne(c => c.SubmittedCart)
+            .WithOne()
+            .HasForeignKey<SubmittedCart>(sc => sc.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Cart>()
+            .HasOne(c => c.PublishedCart)
+            .WithOne()
+            .HasForeignKey<PublishedCart>(pc => pc.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // CartItem
         modelBuilder.Entity<CartItem>()
             .HasKey(ci => ci.CartItemId);
-
-        modelBuilder.Entity<InventoryEntity>()
-            .HasKey(e => e.ProductId);
-
-        modelBuilder.Entity<PricingEntity>()
-            .HasKey(e => e.ProductId);
 
         // SubmittedCart
         modelBuilder.Entity<SubmittedCart>()
@@ -65,6 +71,14 @@ public class AppDbContext : DbContext
         // PublishedCart
         modelBuilder.Entity<PublishedCart>()
             .HasKey(pc => pc.CartId);
+
+        // Inventory
+        modelBuilder.Entity<InventoryEntity>()
+            .HasKey(e => e.ProductId);
+
+        // Pricing
+        modelBuilder.Entity<PricingEntity>()
+            .HasKey(e => e.ProductId);
 
         // Reamodels
         modelBuilder.Entity<InventoriesReadModelEntity>()

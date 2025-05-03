@@ -11,6 +11,9 @@ public class CartStateEntityFrameworkRepository(AppDbContext dbContext)
     {
         var cart = await dbContext.Carts
             .Include(c => c.CartItems)
+            .Include(c => c.SubmittedCart)
+            .ThenInclude(sc => sc.OrderedProducts)
+            .Include(c => c.PublishedCart)
             .FirstOrDefaultAsync(cart => cart.CartId == id.Value);
 
         return cart?.ToDomain() ?? initialState;
@@ -18,7 +21,8 @@ public class CartStateEntityFrameworkRepository(AppDbContext dbContext)
 
     public async Task<CartId> SaveState(CartId id, CartState state)
     {
-        var cart = await dbContext.Carts.FirstOrDefaultAsync(cart => cart.CartId == id.Value);
+        var cart = await dbContext.Carts
+            .FirstOrDefaultAsync(cart => cart.CartId == id.Value);
 
         if (cart == null)
         {
