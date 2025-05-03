@@ -19,6 +19,18 @@ builder.Services
 var app = builder.Build();
 app.MapOpenApi();
 
+var eventStoreDbClient = new EventStoreClient(EventStoreClientSettings.Create("esdb://localhost:2113?tls=false"));
+using var scope = app.Services.CreateScope();
+var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+
+// Application
+var runApplicationEventSourced = true;
+var cartStateStored = CartDecider.Decider.ConfigureState(new CartStateEntityFrameworkRepository(dbContext));
+var cartEventStored = CartDecider.Decider.ConfigureEventPersistence(new CartEventsRepository(eventStoreDbClient));
+
+CartDispatch cartDispatch = runApplicationEventSourced ? cartEventStored.ExecuteCommand : cartStateStored.ExecuteCommand;
+
 IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollection<TEvent>, TError> result) where TError : notnull
 {
     return result.Switch(
@@ -26,4 +38,33 @@ IResult ResultToHttpResponse<TId, TEvent, TError>(TId id, Result<IReadOnlyCollec
         error: err => Results.BadRequest(err.ToString()));
 }
 
+app.MapPost(
+    "/additem/{cartId}",
+    async (CartId cartId, [FromBody] AddItemPayload item) =>
+    {
+        var result = await cartDispatch(cartId, item.ToCommand());
+        return ResultToHttpResponse(cartId, result);;
+    })
+    .WithName("AddCartItem");
+
 app.Run();
+
+record AddItemPayload(
+    string description,
+    string image,
+    decimal price,
+    Guid itemId,
+    Guid productId)
+{
+    public CartCommand.AddItemCommand ToCommand()
+    {
+        var item = this;
+        return new CartCommand.AddItemCommand(
+            Description: item.description,
+            Image: item.image,
+            Price: item.price,
+            ItemId: item.itemId,
+            ProductId: item.productId);
+    }
+}
+
